@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% block title %}{{ qr.name }} — QR.track{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title">{{ qr.name }}</div>
+      <div class="page-subtitle">
+        <span class="badge badge-green" style="margin-right:0.5rem;">Active · Never Expires</span>
+        Created {{ qr.created_at|date:"M j, Y" }}
+      </div>
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm">← Dashboard</a>
+      <a href="{% url 'delete_qr' qr.short_code %}" class="btn btn-danger btn-sm">Delete</a>
+    </div>
+  </div>
+
+  <!-- Top Row -->
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <!-- QR Image + Info -->
+    <div class="card" style="display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap;">
+      {% if qr.qr_image %}
+      <div style="background:white; border-radius:12px; padding:12px; flex-shrink:0;">
+        <img src="{{ qr.qr_image.url }}" alt="QR Code" style="width:140px; height:140px; display:block;">
+      </div>
+      {% endif %}
+      <div style="flex:1; min-width:180px;">
+        <div style="margin-bottom:1rem;">
+          <div class="form-label">Tracking URL</div>
+          <div class="code-block" onclick="copyToClipboard('{{ tracking_url }}')" title="Click to copy">
+            {{ tracking_url }}
+          </div>
+          <div style="font-size:0.72rem; color:var(--text-dim); margin-top:0.3rem;">Click to copy</div>
+        </div>
+        <div>
+          <div class="form-label">Destination</div>
+          <a href="{{ qr.destination_url }}" target="_blank" style="color:var(--accent); font-size:0.82rem; word-break:break-all; font-family:'DM Mono',monospace;">
+            {{ qr.destination_url }}
+          </a>
+        </div>
+        {% if qr.qr_image %}
+        <div style="margin-top:1rem;">
+          <a href="{{ qr.qr_image.url }}" download class="btn btn-ghost btn-sm">↓ Download PNG</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; align-content:start;">
+      <div class="stat-card">
+        <div class="stat-label">Total Scans</div>
+        <div class="stat-value">{{ qr.total_scans }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unique IPs</div>
+        <div class="stat-value">{{ qr.unique_scans }}</div>
+      </div>
+      <div class="stat-card" style="grid-column:span 2;">
+        <div class="stat-label">Short Code</div>
+        <div style="font-family:'DM Mono',monospace; font-size:1.1rem; font-weight:500; color:var(--accent-2); margin-top:0.25rem;">{{ qr.short_code }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scans Timeline -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">Scans — Last 30 Days</div>
+    <div style="height:200px;">
+      <canvas id="scanChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Device + Browser Charts -->
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <div class="card">
+      <div class="card-header">Device Types</div>
+      {% if device_labels %}
+      <div style="height:180px; display:flex; align-items:center; justify-content:center;">
+        <canvas id="deviceChart"></canvas>
+      </div>
+      {% else %}
+      <div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:2rem;">No scan data yet</div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="card-header">Top Browsers</div>
+      {% if browser_data %}
+      {% for b in browser_data %}
+      <div style="margin-bottom:0.75rem;">
+        <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:0.3rem;">
+          <span>{{ b.browser }}</span>
+          <span style="color:var(--text-muted);">{{ b.count }}</span>
+        </div>
+        <div style="height:4px; background:var(--surface-2); border-radius:2px; overflow:hidden;">
+          <div style="height:100%; background:var(--accent); width:{{ b.count|floatformat:0 }}%;  border-radius:2px; max-width:100%;"></div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:2rem;">No scan data yet</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- OS Breakdown -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header">Operating Systems</div>
+    {% if os_data %}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1rem;">
+      {% for o in os_data %}
+      <div style="background:var(--surface-2); border-radius:10px; padding:1rem; text-align:center;">
+        <div style="font-family:'Syne',sans-serif; font-size:1.25rem; font-weight:800; color:var(--text);">{{ o.count }}</div>
+        <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">{{ o.os }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1.5rem;">No scan data yet</div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Scans Table -->
+  <div class="card">
+    <div class="card-header">Recent Scans</div>
+    {% if recent_scans %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Device</th>
+            <th>Browser</th>
+            <th>OS</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in recent_scans %}
+          <tr>
+            <td style="font-family:'DM Mono',monospace; font-size:0.78rem;">{{ scan.scanned_at|date:"M j, H:i" }}</td>
+            <td><span class="badge badge-blue">{{ scan.device_type }}</span></td>
+            <td>{{ scan.browser }}</td>
+            <td>{{ scan.os }}</td>
+            <td style="font-family:'DM Mono',monospace; font-size:0.78rem;">{{ scan.ip_address|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:2rem;">
+      <div class="empty-icon">📡</div>
+      <div class="empty-title">No scans yet</div>
+      <div class="empty-text">Share your QR code to start collecting analytics.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Scans chart
+const dates = {{ chart_dates|safe }};
+const counts = {{ chart_counts|safe }};
+const ctx = document.getElementById('scanChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: dates.map(d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric'})),
+    datasets: [{
+      label: 'Scans',
+      data: counts,
+      backgroundColor: 'rgba(99,130,255,0.4)',
+      borderColor: '#6382ff',
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { backgroundColor:'#0f1520', borderColor:'rgba(99,130,255,0.3)', borderWidth:1, titleColor:'#e8ecf4', bodyColor:'#6b7a99' }},
+    scales: {
+      x: { grid: { color:'rgba(99,130,255,0.06)' }, ticks: { color:'#6b7a99', font:{size:10}, maxTicksLimit:8 }, border:{color:'rgba(99,130,255,0.1)'} },
+      y: { grid: { color:'rgba(99,130,255,0.06)' }, ticks: { color:'#6b7a99', font:{size:10} }, border:{color:'rgba(99,130,255,0.1)'}, beginAtZero:true }
+    }
+  }
+});
+
+// Device chart
+{% if device_labels %}
+const dCtx = document.getElementById('deviceChart').getContext('2d');
+new Chart(dCtx, {
+  type: 'doughnut',
+  data: {
+    labels: {{ device_labels|safe }},
+    datasets: [{
+      data: {{ device_counts|safe }},
+      backgroundColor: ['#6382ff','#a78bfa','#34d399','#fbbf24','#f87171'],
+      borderWidth: 0,
+      hoverOffset: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position:'right', labels:{ color:'#6b7a99', font:{size:11}, boxWidth:12 } },
+      tooltip: { backgroundColor:'#0f1520', borderColor:'rgba(99,130,255,0.3)', borderWidth:1, titleColor:'#e8ecf4', bodyColor:'#6b7a99' }
+    },
+    cutout: '65%',
+  }
+});
+{% endif %}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const el = event.target;
+    const orig = el.textContent;
+    el.textContent = 'Copied!';
+    el.style.color = 'var(--success)';
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
+  });
+}
+</script>
+{% endblock %}

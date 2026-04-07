@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Delete QR Code — QR.track{% endblock %}
+{% block content %}
+<div style="max-width:480px; margin:5rem auto; padding:0 1.5rem;">
+  <div class="card" style="text-align:center; padding:2.5rem;">
+    <div style="font-size:2.5rem; margin-bottom:1rem;">🗑️</div>
+    <h2 style="font-family:'Syne',sans-serif; font-size:1.4rem; font-weight:800; margin-bottom:0.75rem;">Delete QR Code?</h2>
+    <p style="color:var(--text-muted); font-size:0.9rem; line-height:1.6; margin-bottom:0.5rem;">
+      You're about to permanently delete <strong style="color:var(--text);">{{ qr.name }}</strong>.
+    </p>
+    <p style="color:var(--danger); font-size:0.82rem; margin-bottom:2rem;">
+      This will also delete all <strong>{{ qr.total_scans }}</strong> scan records. This cannot be undone.
+    </p>
+    <div style="display:flex; gap:0.75rem; justify-content:center;">
+      <a href="{% url 'qr_detail' qr.short_code %}" class="btn btn-ghost">Cancel</a>
+      <form method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

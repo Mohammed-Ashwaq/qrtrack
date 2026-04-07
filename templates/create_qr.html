@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Create QR Code — QR.track{% endblock %}
+{% block content %}
+<div style="max-width:560px; margin:3rem auto; padding:0 1.5rem;">
+  <div class="page-header" style="margin-bottom:1.5rem;">
+    <div>
+      <div class="page-title">Create QR Code</div>
+      <div class="page-subtitle">Permanent, trackable, ready in seconds</div>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm">← Back</a>
+  </div>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="form-errors">{{ field.errors.0 }}</div>{% endif %}
+        {% if field.help_text %}<div style="color:var(--text-dim); font-size:0.75rem; margin-top:0.3rem;">{{ field.help_text }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <div style="background:rgba(99,130,255,0.06); border:1px solid rgba(99,130,255,0.15); border-radius:8px; padding:0.85rem 1rem; font-size:0.8rem; color:var(--text-muted); margin-bottom:1.5rem;">
+        ♾️ &nbsp;This QR code will <strong style="color:var(--text);">never expire</strong>. Once created, it tracks every scan permanently.
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.8rem; font-size:0.95rem;">
+        Generate QR Code →
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

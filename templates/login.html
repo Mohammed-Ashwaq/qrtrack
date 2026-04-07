@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — QR.track{% endblock %}
+{% block content %}
+<div style="max-width:420px; margin:5rem auto; padding:0 1.5rem;">
+  <div style="text-align:center; margin-bottom:2rem;">
+    <h1 style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; letter-spacing:-0.03em;">Welcome back</h1>
+    <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.5rem;">Sign in to your QR.track account</p>
+  </div>
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="form-errors">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      {% if form.non_field_errors %}
+      <div class="form-errors" style="margin-bottom:1rem;">{{ form.non_field_errors.0 }}</div>
+      {% endif %}
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem;">Sign In</button>
+    </form>
+  </div>
+  <p style="text-align:center; margin-top:1.25rem; color:var(--text-muted); font-size:0.875rem;">
+    Don't have an account? <a href="{% url 'signup' %}" style="color:var(--accent);">Sign up</a>
+  </p>
+</div>
+{% endblock %}
