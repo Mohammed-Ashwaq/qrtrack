@@ -1,0 +1,25 @@
+@"
+services:
+  - type: web
+    name: qrtrack
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn qranalytics.wsgi:application --bind 0.0.0.0:`$PORT"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qrtrack-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+databases:
+  - name: qrtrack-db
+    plan: free
+"@ | Out-File -FilePath render.yaml -Encoding utf8
